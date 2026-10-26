@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lottery Offer Sale – Happy Winning</title>
+<!-- Fonts, Tailwind, Font Awesome -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<!-- QR code maker (amount ke hisaab se QR banata hai) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+/* ===== COLORS: change here to re-theme the whole site ===== */
+:root{
+  --ink:#1B1038;      /* deep plum – main dark */
+  --ink2:#2A1A55;     /* lighter plum – cards on dark */
+  --gold:#FFB020;     /* saffron gold – main accent */
+  --mint:#2DD4A7;     /* mint – success / WhatsApp-ish */
+  --paper:#FFF9EE;    /* warm white – page background */
+}
+body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink)}
+h1,h2,h3,.brand{font-family:'Bricolage Grotesque',sans-serif}
+.tab{display:none}.tab.active{display:block}
+.btn{display:inline-flex;align-items:center;gap:.5rem;padding:.75rem 1.25rem;border-radius:.75rem;font-weight:700;transition:transform .15s}
+.btn:active{transform:scale(.97)}
+.btn-gold{background:var(--gold);color:var(--ink)}
+.btn-dark{background:var(--ink);color:#fff}
+.input{width:100%;padding:.7rem .9rem;border:2px solid #E8DFC8;border-radius:.7rem;background:#fff}
+.input:focus{outline:3px solid var(--gold);border-color:var(--ink)}
+/* Ticket shape with perforated notches */
+.ticket{background:var(--gold);color:var(--ink);border-radius:1.25rem;position:relative;
+  -webkit-mask:radial-gradient(circle 14px at 0 62%,#0000 98%,#000) left/51% 100% no-repeat,radial-gradient(circle 14px at 100% 62%,#0000 98%,#000) right/51% 100% no-repeat;
+  mask:radial-gradient(circle 14px at 0 62%,#0000 98%,#000) left/51% 100% no-repeat,radial-gradient(circle 14px at 100% 62%,#0000 98%,#000) right/51% 100% no-repeat}
+.perf{border-top:3px dashed rgba(27,16,56,.35)}
+.navbtn.on{background:var(--gold);color:var(--ink)}
+@media (prefers-reduced-motion:no-preference){.spin-once{animation:spin 1s ease-out 1}}
+@keyframes spin{from{transform:rotate(-8deg) scale(.9)}to{transform:rotate(0) scale(1)}}
+</style>
+</head>
+<body class="min-h-screen">
+<div id="netWarn" style="display:none;background:#fff3cd;color:#664d03;padding:10px;text-align:center;font-weight:700;position:fixed;top:0;left:0;right:0;z-index:200">Internet chalu karo aur page dobara kholo (design internet se load hota hai).</div>
+
+<!-- ================= LOGIN / REGISTER (shows first when site opens) ================= -->
+<div id="auth" class="fixed inset-0 z-[100] overflow-auto" style="background:var(--ink)">
+  <div class="min-h-full grid place-items-center p-4">
+    <div class="w-full max-w-md">
+      <div class="text-center text-white mb-5">
+        <i class="fa-solid fa-ticket text-4xl" style="color:var(--gold)"></i>
+        <h1 class="brand text-3xl font-extrabold mt-2">Lottery Offer Sale</h1>
+        <p class="text-white/70 text-sm mt-1">Aage badhne ke liye login ya register karo</p>
+      </div>
+      <div class="rounded-3xl p-6" style="background:var(--paper)">
+        <!-- Login / Register switch -->
+        <div class="grid grid-cols-2 gap-2 mb-5 p-1 rounded-xl bg-white border-2 border-[#E8DFC8]">
+          <button id="tabLogin" class="py-2 rounded-lg font-bold" style="background:var(--gold)">Login</button>
+          <button id="tabReg" class="py-2 rounded-lg font-bold">Register</button>
+        </div>
+
+        <!-- LOGIN FORM -->
+        <form id="loginForm" class="space-y-3">
+          <input class="input" id="lPhone" type="tel" inputmode="numeric" placeholder="Mobile phone number" required>
+          <input class="input" id="lPass" type="password" placeholder="Password" required>
+          <button class="btn btn-dark w-full justify-center" type="submit"><i class="fa-solid fa-right-to-bracket"></i>Login karo</button>
+          <p id="lMsg" class="text-sm font-bold text-red-600"></p>
+        </form>
+
+        <!-- REGISTER FORM: username, mobile, password, re-enter password -->
+        <form id="regForm" class="space-y-3 hidden">
+          <input class="input" id="rUser" placeholder="Username" required>
+          <input class="input" id="rPhone" type="tel" inputmode="numeric" pattern="[0-9]{10}" placeholder="Mobile phone number (10 digit)" required>
+          <input class="input" id="rPass" type="password" minlength="6" placeholder="Password (kam se kam 6 akshar)" required>
+          <input class="input" id="rPass2" type="password" placeholder="Re-enter password" required>
+          <label class="flex gap-2 text-sm items-start"><input type="checkbox" id="rAge" class="mt-1" required> Meri umar 18 saal ya usse zyada hai aur main apne rajya ke kanoon ke hisaab se khel sakta/sakti hoon.</label>
+          <button class="btn btn-gold w-full justify-center" type="submit"><i class="fa-solid fa-user-plus"></i>Register karo</button>
+          <p id="rMsg" class="text-sm font-bold text-red-600"></p>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== TOP BAR (desktop nav + logo) ===== -->
+<header class="sticky top-0 z-40 text-white" style="background:var(--ink)">
+  <div class="max-w-6xl mx-auto flex items-center justify-between px-4 py-3">
+    <div class="brand text-lg sm:text-xl font-extrabold flex items-center gap-2"><i class="fa-solid fa-ticket" style="color:var(--gold)"></i> Lottery Offer Sale</div>
+    <!-- Desktop dashboard tabs -->
+    <nav class="hidden md:flex gap-2">
+      <button class="navbtn on px-4 py-2 rounded-lg font-bold" data-tab="home"><i class="fa-solid fa-house mr-2"></i>Home</button>
+      <button class="navbtn px-4 py-2 rounded-lg font-bold" data-tab="products"><i class="fa-solid fa-ticket mr-2"></i>Products</button>
+      <button class="navbtn px-4 py-2 rounded-lg font-bold" data-tab="items"><i class="fa-solid fa-gift mr-2"></i>Items</button>
+      <button class="navbtn px-4 py-2 rounded-lg font-bold" data-tab="account"><i class="fa-solid fa-user mr-2"></i>Account</button>
+    </nav>
+  </div>
+</header>
+
+<!-- ===== MOBILE BOTTOM NAV ===== -->
+<nav class="md:hidden fixed bottom-0 inset-x-0 z-40 grid grid-cols-4 text-white text-xs" style="background:var(--ink)">
+  <button class="navbtn on py-3" data-tab="home"><i class="fa-solid fa-house block text-lg mb-1"></i>Home</button>
+  <button class="navbtn py-3" data-tab="products"><i class="fa-solid fa-ticket block text-lg mb-1"></i>Products</button>
+  <button class="navbtn py-3" data-tab="items"><i class="fa-solid fa-gift block text-lg mb-1"></i>Items</button>
+  <button class="navbtn py-3" data-tab="account"><i class="fa-solid fa-user block text-lg mb-1"></i>Account</button>
+</nav>
+
+<main class="max-w-6xl mx-auto px-4 pb-28 md:pb-12">
+
+<!-- ================= HOME TAB ================= -->
+<section id="home" class="tab active">
+  <!-- 1) QUICK ACTIONS: Recharge, WhatsApp, Instagram (sabse upar) -->
+  <div class="grid grid-cols-3 gap-3 mt-5">
+    <button id="qRecharge" class="rounded-2xl p-4 text-center font-bold" style="background:var(--gold)"><i class="fa-solid fa-wallet text-2xl block mb-2"></i>Recharge</button>
+    <a href="https://wa.me/918367412485?text=Hi%2C%20mujhe%20madad%20chahiye" target="_blank" class="rounded-2xl p-4 text-center font-bold" style="background:var(--mint)"><i class="fa-brands fa-whatsapp text-2xl block mb-2"></i>WhatsApp</a>
+    <!-- CHANGE: put your real Instagram link below -->
+    <a href="https://open-in-app.com/o/?u=https%3A%2F%2Fwww.instagram.com%2Fticket_offers.3%3Fdlrf%3DMWc2YXJjdXZpcHVqZg%3D%3D" target="_blank" class="rounded-2xl p-4 text-center font-bold text-white" style="background:var(--ink2)"><i class="fa-brands fa-instagram text-2xl block mb-2"></i>Instagram</a>
+  </div>
+
+  <!-- 2) OWNER PHOTO + 3) ABOUT US -->
+  <div class="mt-6 grid md:grid-cols-3 gap-6 items-center bg-white rounded-3xl p-5 border-2 border-[#E8DFC8]">
+    <div class="mx-auto">
+      <!-- CHANGE: apni photo ko "owner.jpg" naam se is index.html ke saath wale folder mein rakho -->
+      <img src="owner.jpg" alt="Owner" class="w-40 h-40 sm:w-48 sm:h-48 rounded-full object-cover border-4" style="border-color:var(--gold)"
+           onerror="this.style.display='none';document.getElementById('noPhoto').style.display='grid'">
+      <div id="noPhoto" class="w-40 h-40 sm:w-48 sm:h-48 rounded-full place-items-center text-6xl text-white border-4" style="display:none;background:var(--ink);border-color:var(--gold)"><i class="fa-solid fa-user"></i></div>
+    </div>
+    <div class="md:col-span-2">
+      <h2 class="text-3xl font-extrabold">Hamare baare mein</h2>
+      <p class="mt-3 text-lg leading-relaxed">Hum lottery game ke offers aur ticket sales ka kaam karte hain. Hamara maksad hai ki aap saaf kimat, seedhe offers aur bharose ke saath khelo. Khelna sirf manoranjan ke liye ho. Jeet ki koi guarantee nahi hoti.</p>
+    </div>
+  </div>
+
+  <!-- HERO -->
+  <div class="rounded-3xl mt-5 p-6 sm:p-12 grid md:grid-cols-2 gap-8 items-center text-white" style="background:var(--ink)">
+    <div>
+      <h1 class="text-4xl sm:text-6xl font-extrabold leading-tight">Offer lagao, ticket lo, <span style="color:var(--gold)">happy winning</span> karo.</h1>
+      <p class="mt-4 text-white/80 max-w-md">Lottery games par chalte offers ek hi jagah. Products dekho aur apna ticket book karo.</p>
+      <div class="mt-6 flex flex-wrap gap-3">
+        <a href="#contact" class="btn btn-gold"><i class="fa-solid fa-paper-plane"></i>Humse sampark karo</a>
+        <a href="https://wa.me/918367412485?text=Hi%2C%20mujhe%20lottery%20offer%20ke%20baare%20mein%20jaanna%20hai" target="_blank" class="btn" style="background:var(--mint);color:var(--ink)"><i class="fa-brands fa-whatsapp text-lg"></i>WhatsApp</a>
+        <!-- CHANGE: put your real Instagram link below -->
+        <a href="https://open-in-app.com/o/?u=https%3A%2F%2Fwww.instagram.com%2Fticket_offers.3%3Fdlrf%3DMWc2YXJjdXZpcHVqZg%3D%3D" target="_blank" class="btn bg-white/10 text-white"><i class="fa-brands fa-instagram text-lg"></i>Instagram</a>
+      </div>
+    </div>
+    <!-- Hero ticket graphic -->
+    <div class="ticket spin-once p-6 max-w-sm mx-auto w-full">
+      <div class="flex justify-between font-bold"><span>OFFER TICKET</span><i class="fa-solid fa-star"></i></div>
+      <div class="brand text-6xl font-extrabold mt-2">₹200 <span class="text-2xl">ticket</span></div>
+      <div class="perf my-5"></div>
+      <div class="flex justify-between items-end"><div class="text-sm">Lucky No.<br><b class="brand text-2xl tracking-widest">7 · 2 · 9 · 4</b></div><i class="fa-solid fa-clover text-4xl"></i></div>
+    </div>
+  </div>
+
+  <!-- SERVICES -->
+  <h2 class="text-3xl font-extrabold mt-12">Hamari services</h2>
+  <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-5">
+    <!-- Add or edit services here -->
+    <div class="bg-white rounded-2xl p-5 border-2 border-[#E8DFC8]"><i class="fa-solid fa-ticket text-2xl" style="color:var(--gold)"></i><h3 class="font-bold text-lg mt-3">Ticket sales</h3><p class="text-sm mt-1 text-[#1B1038]/70">Alag alag lottery games ke tickets.</p></div>
+    <div class="bg-white rounded-2xl p-5 border-2 border-[#E8DFC8]"><i class="fa-solid fa-tags text-2xl" style="color:var(--gold)"></i><h3 class="font-bold text-lg mt-3">Special offers</h3><p class="text-sm mt-1 text-[#1B1038]/70">2 lo 1 free jaise offers, har hafte naye.</p></div>
+    <div class="bg-white rounded-2xl p-5 border-2 border-[#E8DFC8]"><i class="fa-solid fa-wallet text-2xl" style="color:var(--gold)"></i><h3 class="font-bold text-lg mt-3">Easy recharge</h3><p class="text-sm mt-1 text-[#1B1038]/70">Paytm ya PhonePe se balance recharge karo.</p></div>
+    <div class="bg-white rounded-2xl p-5 border-2 border-[#E8DFC8]"><i class="fa-solid fa-headset text-2xl" style="color:var(--gold)"></i><h3 class="font-bold text-lg mt-3">Support</h3><p class="text-sm mt-1 text-[#1B1038]/70">WhatsApp ya phone par madad.</p></div>
+  </div>
+
+  <!-- CONTACT -->
+  <div id="contact" class="mt-12 grid md:grid-cols-2 gap-8">
+    <div>
+      <h2 class="text-3xl font-extrabold">Humse baat karo</h2>
+      <ul class="mt-4 space-y-3 text-lg">
+        <li><i class="fa-solid fa-phone w-6" style="color:var(--gold)"></i><a href="tel:+918367412485">8367412485</a></li>
+        <li><i class="fa-brands fa-whatsapp w-6" style="color:var(--gold)"></i><a href="https://wa.me/918367412485" target="_blank">WhatsApp par message</a></li>
+        <li><i class="fa-solid fa-envelope w-6" style="color:var(--gold)"></i><a href="mailto:lotteryticketoffera.3@gmail.com">lotteryticketoffera.3@gmail.com</a></li>
+        <li><i class="fa-brands fa-instagram w-6" style="color:var(--gold)"></i><a href="https://open-in-app.com/o/?u=https%3A%2F%2Fwww.instagram.com%2Fticket_offers.3%3Fdlrf%3DMWc2YXJjdXZpcHVqZg%3D%3D" target="_blank">Instagram par follow karo</a></li>
+      </ul>
+    </div>
+    <!-- CONTACT FORM → Web3Forms → your email -->
+    <form class="web3form bg-white rounded-3xl p-6 border-2 border-[#E8DFC8] space-y-3">
+      <input type="hidden" name="access_key" value="94b472ad-687e-42c0-a7c5-2b85b322ab55"> <!-- CHANGE: your Web3Forms key -->
+      <input type="hidden" name="subject" value="New Website Message">
+      <input class="input" name="name" placeholder="Naam" required>
+      <input class="input" name="email" type="email" placeholder="Email" required>
+      <textarea class="input" name="message" rows="4" placeholder="Aapka message" required></textarea>
+      <button class="btn btn-dark w-full justify-center" type="submit"><i class="fa-solid fa-paper-plane"></i>Message bhejo</button>
+      <p class="form-msg text-sm font-bold"></p>
+    </form>
+  </div>
+</section>
+
+<!-- ================= PRODUCTS TAB ================= -->
+<section id="products" class="tab">
+  <h2 class="text-3xl font-extrabold mt-6">Products</h2>
+  <p class="mt-1 text-[#1B1038]/70">Lottery games chuno. Prices apni marzi se badlo (neeche JS mein list hai).</p>
+  <div id="productGrid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 mt-5"></div>
+</section>
+
+<!-- ================= ITEMS TAB ================= -->
+<section id="items" class="tab">
+  <h2 class="text-3xl font-extrabold mt-6">Items aur offers</h2>
+  <p class="mt-1 text-[#1B1038]/70">Chalte hue offers aur combo packs.</p>
+  <div id="itemGrid" class="grid sm:grid-cols-2 gap-5 mt-5"></div>
+</section>
+
+<!-- ================= ACCOUNT TAB ================= -->
+<section id="account" class="tab">
+  <div class="flex flex-wrap items-center justify-between gap-3 mt-6">
+    <h2 class="text-3xl font-extrabold">Namaste, <span id="uName"></span></h2>
+    <button id="logout" class="btn btn-dark"><i class="fa-solid fa-right-from-bracket"></i>Logout</button>
+  </div>
+  <div class="grid md:grid-cols-2 gap-6 mt-5">
+    <!-- Balance -->
+    <div class="rounded-3xl p-6 text-white" style="background:var(--ink)">
+      <p class="text-white/70">Wallet balance</p>
+      <p class="brand text-5xl font-extrabold mt-1" style="color:var(--gold)">₹<span id="bal">0</span></p>
+      <button id="rBtn" class="btn btn-gold w-full justify-center mt-5"><i class="fa-solid fa-bolt"></i>Recharge karo</button>
+      <p class="text-xs text-white/60 mt-2">Paytm ya PhonePe se pay karo. Payment confirm hone par balance add hota hai.</p>
+    </div>
+    <!-- Bookings & orders -->
+    <div class="bg-white rounded-3xl p-6 border-2 border-[#E8DFC8]">
+      <h3 class="font-bold text-xl">Meri activity</h3>
+      <ul id="activity" class="mt-3 space-y-2 text-sm"></ul>
+      <p id="emptyAct" class="text-[#1B1038]/60">Abhi kuch nahi. Products tab se ticket chuno.</p>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- ===== FOOTER ===== -->
+<footer class="text-white text-center px-4 py-8 pb-28 md:pb-8" style="background:var(--ink)">
+  <p class="brand text-xl font-bold">Lottery Offer Sale</p>
+  <p class="text-white/70 text-sm mt-1">📞 8367412485 · ✉ lotteryticketoffera.3@gmail.com</p>
+  <p class="text-white/60 text-xs mt-4 max-w-xl mx-auto">Sirf 18+ ke liye. Lottery ek jokhim wala khel hai, jeet ki koi guarantee nahi. Apne rajya ke kanoon ke hisaab se hi khelo aur apni limit mein raho.</p>
+</footer>
+
+<!-- ===== RECHARGE POPUP: Paytm ya PhonePe ===== -->
+<div id="payModal" class="fixed inset-0 z-[150] p-4 overflow-auto" style="display:none;background:rgba(0,0,0,.65)">
+  <div class="min-h-full grid place-items-center">
+    <div class="w-full max-w-md rounded-3xl p-6 relative" style="background:var(--paper)">
+      <button id="payClose" class="absolute right-4 top-4 text-xl" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+      <h3 class="text-2xl font-extrabold">Recharge karo</h3>
+      <p class="text-sm mt-1 text-[#1B1038]/70">1. Amount chuno &nbsp; 2. Paytm / PhonePe dabao ya QR scan karo</p>
+      <div class="flex flex-wrap gap-2 mt-4" id="payAmts"></div>
+      <input id="pAmt" type="number" min="10" class="input mt-3" placeholder="Ya apni amount likho (₹)">
+      <div class="grid grid-cols-2 gap-3 mt-4">
+        <button id="payPaytm" class="btn justify-center text-white" style="background:#00B9F1"><i class="fa-solid fa-wallet"></i>Paytm</button>
+        <button id="payPhonePe" class="btn justify-center text-white" style="background:#5F259F"><i class="fa-solid fa-mobile-screen"></i>PhonePe</button>
+      </div>
+      <!-- QR: amount ke hisaab se badalta hai (₹100 chuno to ₹100 ka QR) -->
+      <div class="mt-4 text-center">
+        <div id="qrCode" class="bg-white p-3 rounded-xl border-2 border-[#E8DFC8]" style="display:none"></div>
+        <p id="qrLabel" class="text-sm font-bold mt-2"></p>
+      </div>
+      <div class="mt-4 p-3 rounded-xl bg-white border-2 border-[#E8DFC8] text-sm">
+        <p>UPI ID: <b id="upiShow"></b> <button id="copyUpi" class="ml-1" aria-label="Copy"><i class="fa-regular fa-copy"></i></button></p>
+        <p class="mt-1">Paytm / PhonePe number: <b id="numShow"></b></p>
+      </div>
+      <!-- UTR: pay karne ke baad customer yahan UTR number daalta hai -->
+      <div class="mt-4">
+        <label class="text-sm font-bold">Pay karne ke baad UTR number daalo</label>
+        <input id="utr" class="input mt-1" inputmode="numeric" maxlength="12" placeholder="12 digit UTR / Ref. No.">
+        <button id="paidBtn" class="btn btn-dark w-full justify-center mt-3"><i class="fa-solid fa-paper-plane"></i>UTR submit karo</button>
+      </div>
+      <p id="payMsg" class="text-sm font-bold text-red-600 mt-2"></p>
+    </div>
+  </div>
+</div>
+
+<!-- Floating WhatsApp button -->
+<a href="https://wa.me/918367412485" target="_blank" aria-label="WhatsApp" class="fixed right-4 bottom-20 md:bottom-6 z-50 w-14 h-14 rounded-full grid place-items-center text-2xl shadow-lg" style="background:var(--mint);color:var(--ink)"><i class="fa-brands fa-whatsapp"></i></a>
+
+<script>
+/* ===== EDIT YOUR PRODUCTS HERE ===== */
+const products=[
+ {name:"Daily Lucky Draw",price:200,desc:"Roz ka draw. 1 ticket = ₹200.",icon:"fa-sun"},
+ {name:"Weekly Mega",price:200,desc:"Hafte ka bada inaam. 1 ticket = ₹200.",icon:"fa-crown"},
+ {name:"Happy Weekend",price:200,desc:"Weekend special. 1 ticket = ₹200.",icon:"fa-champagne-glasses"}
+];
+/* ===== EDIT YOUR ITEMS / OFFERS HERE ===== */
+const items=[
+ /* Apne offers yahan badlo (naam, price, description) */
+ {name:"1 Lottery Ticket",price:200,desc:"Ek ticket, ₹200.",icon:"fa-ticket"},
+ {name:"2 Tickets pack",price:400,desc:"2 tickets ka pack.",icon:"fa-gift"},
+ {name:"5 Tickets pack",price:1000,desc:"5 tickets ka pack.",icon:"fa-users"},
+ {name:"10 Tickets pack",price:2000,desc:"10 tickets ka pack.",icon:"fa-fire"}
+];
+
+/* ---- Tabs (works for desktop + mobile nav) ---- */
+document.querySelectorAll('.navbtn').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById(b.dataset.tab).classList.add('active');
+  document.querySelectorAll('.navbtn').forEach(x=>x.classList.toggle('on',x.dataset.tab===b.dataset.tab));
+  window.scrollTo({top:0});
+});
+
+/* Home aur Account ke Recharge buttons: popup kholte hain (Paytm / PhonePe) */
+document.getElementById('qRecharge').onclick=()=>openPay();
+document.getElementById('rBtn').onclick=()=>openPay();
+
+/* ---- Account data kept in this browser (localStorage) ---- */
+const load=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch(e){return d}};
+const save=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+let uid=null, balance=0, acts=[];   // set per user after login
+function addAct(t){acts.unshift(t);acts=acts.slice(0,15);save('acts_'+uid,acts);render()}
+function render(){
+  document.getElementById('bal').textContent=balance;
+  const ul=document.getElementById('activity');
+  ul.innerHTML=acts.map(a=>`<li class="p-3 rounded-lg" style="background:var(--paper)">${a}</li>`).join('');
+  document.getElementById('emptyAct').style.display=acts.length?'none':'block';
+}
+
+/* ---- Product / item cards ---- */
+function card(p){return `<div class="bg-white rounded-2xl p-5 border-2 border-[#E8DFC8] flex flex-col">
+  <i class="fa-solid ${p.icon} text-3xl" style="color:var(--gold)"></i>
+  <h3 class="font-bold text-xl mt-3">${p.name}</h3>
+  <p class="text-sm text-[#1B1038]/70 mt-1 flex-1">${p.desc}</p>
+  <div class="flex items-center justify-between mt-4"><span class="brand text-2xl font-extrabold">₹${p.price}</span>
+  <button class="btn btn-dark buy" data-n="${p.name}" data-p="${p.price}">Book karo</button></div></div>`}
+document.getElementById('productGrid').innerHTML=products.map(card).join('');
+document.getElementById('itemGrid').innerHTML=items.map(card).join('');
+document.querySelectorAll('.buy').forEach(b=>b.onclick=()=>{
+  const n=b.dataset.n,p=+b.dataset.p;
+  if(balance>=p){balance-=p;save('bal_'+uid,balance);addAct(`✅ ${n} book kiya (₹${p})`)}
+  else{addAct(`⏳ ${n} ke liye balance kam hai. Pehle recharge karo.`);document.querySelector('[data-tab=account]').click()}
+  /* Order WhatsApp par bhi bhejo */
+  window.open(`https://wa.me/918367412485?text=${encodeURIComponent('Mujhe '+n+' (₹'+p+') book karna hai')}`,'_blank');
+});
+
+
+/* ---- Web3Forms: contact form → your email ---- */
+document.querySelectorAll('.web3form').forEach(f=>f.addEventListener('submit',async e=>{
+  e.preventDefault();
+  const msg=f.querySelector('.form-msg'),btn=f.querySelector('button[type=submit]');
+  btn.disabled=true;msg.textContent='Bhej rahe hain...';
+  try{
+    const r=await fetch('https://api.web3forms.com/submit',{method:'POST',body:new FormData(f)});
+    const d=await r.json();
+    if(d.success){msg.textContent='✅ Bhej diya! Hum jaldi sampark karenge.';
+      f.reset()}
+    else msg.textContent='❌ '+(d.message||'Kuch gadbad hui, dobara try karo.');
+  }catch(err){msg.textContent='❌ Network error. WhatsApp par message karo.'}
+  btn.disabled=false;
+}));
+/* ================= RECHARGE: Paytm / PhonePe =================
+   CHANGE these 3 lines: apna UPI ID, Paytm/PhonePe number aur naam */
+const PAY={upi:'9392830650@fam', number:'9392830650', name:'Lottery Offer Sale'};
+const pm=id=>document.getElementById(id);
+pm('upiShow').textContent=PAY.upi; pm('numShow').textContent=PAY.number;
+/* UPI link: amount ke saath (QR aur app dono ise use karte hain) */
+const upiQuery=a=>'pa='+encodeURIComponent(PAY.upi)+'&pn='+encodeURIComponent(PAY.name)+'&am='+a+'&cu=INR&tn='+encodeURIComponent('Recharge');
+let qr=null;
+/* Amount ka QR banao / badlo */
+function drawQR(){
+  const a=+pm('pAmt').value, box=pm('qrCode');
+  if(!a||a<10){box.style.display='none';pm('qrLabel').textContent='Amount chuno, to us amount ka QR yahan aayega.';return}
+  if(typeof QRCode==='undefined'){pm('qrLabel').textContent='QR ke liye internet chalu karo.';return}
+  box.style.display='inline-block';
+  if(!qr) qr=new QRCode(box,{text:'upi://pay?'+upiQuery(a),width:200,height:200});
+  else qr.makeCode('upi://pay?'+upiQuery(a));
+  pm('qrLabel').textContent='₹'+a+' ka QR. Kisi bhi UPI app se scan karke pay karo.';
+}
+/* CHANGE: recharge ke amount buttons */
+[100,200,400,1000,2000].forEach(a=>{const b=document.createElement('button');b.className='px-4 py-2 rounded-lg font-bold bg-white border-2 border-[#E8DFC8]';b.textContent='₹'+a;b.onclick=()=>{pm('pAmt').value=a;drawQR()};pm('payAmts').appendChild(b)});
+pm('pAmt').oninput=drawQR;
+function openPay(){pm('payMsg').textContent='';pm('payModal').style.display='block';drawQR()}
+function closePay(){pm('payModal').style.display='none'}
+pm('payClose').onclick=closePay;
+const payAmt=()=>{const a=+pm('pAmt').value;if(!a||a<10){pm('payMsg').textContent='Pehle amount chuno (kam se kam ₹10).';return 0}return a};
+/* Paytm / PhonePe button: us app ko seedha kholta hai (amount ke saath) */
+function payVia(app){
+  const a=payAmt(); if(!a)return;
+  pm('payMsg').textContent='App na khule to upar wala QR scan karo.';
+  location.href=(app==='paytm'?'paytmmp://pay?':app==='phonepe'?'phonepe://pay?':'upi://pay?')+upiQuery(a);
+}
+pm('payPaytm').onclick=()=>payVia('paytm');
+pm('payPhonePe').onclick=()=>payVia('phonepe');
+pm('copyUpi').onclick=()=>{try{navigator.clipboard.writeText(PAY.upi)}catch(e){}};
+/* UTR submit: aapko email (Web3Forms) par jaata hai. Aap app mein check karke balance add karo.
+   Agar email na jaye to WhatsApp khulta hai. */
+pm('paidBtn').onclick=async()=>{
+  const a=payAmt(); if(!a)return;
+  const utr=pm('utr').value.trim(), msg=pm('payMsg');
+  msg.style.color='#dc2626';
+  if(!/^\d{12}$/.test(utr)){msg.textContent='UTR 12 ankon ka hota hai. Dobara check karo.';return}
+  if(load('utrs',[]).includes(utr)){msg.textContent='Ye UTR pehle submit ho chuka hai.';return}
+  const u=(getUsers()[uid]||{}).name||'', btn=pm('paidBtn');
+  btn.disabled=true; msg.style.color='';msg.textContent='Submit ho raha hai...';
+  const fd=new FormData();
+  fd.append('access_key','94b472ad-687e-42c0-a7c5-2b85b322ab55'); /* CHANGE: your Web3Forms key */
+  fd.append('subject','Recharge UTR: Rs '+a); fd.append('username',u); fd.append('mobile',uid);
+  fd.append('amount',a); fd.append('utr',utr);
+  try{
+    const d=await (await fetch('https://api.web3forms.com/submit',{method:'POST',body:fd})).json();
+    if(!d.success) throw new Error('fail');
+    save('utrs',[...load('utrs',[]),utr]);
+    addAct('✅ ₹'+a+' recharge, UTR '+utr+' submit hua. Jaanch ke baad balance add hoga.');
+    pm('utr').value=''; closePay();
+  }catch(e){
+    msg.style.color='#dc2626';msg.textContent='Email nahi gaya. WhatsApp par bhej rahe hain.';
+    window.open('https://wa.me/918367412485?text='+encodeURIComponent('Recharge ₹'+a+' | UTR: '+utr+' | Username: '+u+' | Mobile: '+uid),'_blank');
+  }
+  btn.disabled=false;
+};
+
+/* ================= REGISTER / LOGIN LOGIC =================
+   NOTE: users are stored in THIS browser only (localStorage) and passwords are hashed.
+   For real multi-device accounts you need a backend/database. */
+const $=id=>document.getElementById(id);
+if(typeof tailwind==="undefined")$("netWarn").style.display="block";
+const hash=async t=>{try{return [...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(t)))].map(b=>b.toString(16).padStart(2,'0')).join('')}catch(e){return btoa(unescape(encodeURIComponent(t)))}};
+const getUsers=()=>load('users',{});
+
+function enter(phone){
+  uid=phone; balance=load('bal_'+uid,0); acts=load('acts_'+uid,[]);
+  save('session',phone);
+  $('uName').textContent=getUsers()[phone].name;
+  $('auth').classList.add('hidden');
+  render();
+}
+function showTab(reg){
+  $('loginForm').classList.toggle('hidden',reg); $('regForm').classList.toggle('hidden',!reg);
+  $('tabLogin').style.background=reg?'':'var(--gold)'; $('tabReg').style.background=reg?'var(--gold)':'';
+}
+$('tabLogin').onclick=()=>showTab(false);
+$('tabReg').onclick=()=>showTab(true);
+
+$('regForm').onsubmit=async e=>{
+  e.preventDefault();
+  const phone=$('rPhone').value.trim(), users=getUsers();
+  if($('rPass').value!==$('rPass2').value){$('rMsg').textContent='Dono password same hone chahiye.';return}
+  if(users[phone]){$('rMsg').textContent='Ye number pehle se registered hai. Login karo.';return}
+  users[phone]={name:$('rUser').value.trim(),pass:await hash($('rPass').value)};
+  save('users',users);
+  /* Owner ko email: naye registration ki khabar (password nahi bheja jaata) */
+  const fd=new FormData();
+  fd.append('access_key','94b472ad-687e-42c0-a7c5-2b85b322ab55'); /* CHANGE: your Web3Forms key */
+  fd.append('subject','New Registration'); fd.append('username',users[phone].name); fd.append('phone',phone);
+  fetch('https://api.web3forms.com/submit',{method:'POST',body:fd}).catch(()=>{});
+  enter(phone);
+};
+$('loginForm').onsubmit=async e=>{
+  e.preventDefault();
+  const phone=$('lPhone').value.trim(), u=getUsers()[phone];
+  if(!u||u.pass!==await hash($('lPass').value)){$('lMsg').textContent='Phone number ya password galat hai.';return}
+  enter(phone);
+};
+$('logout').onclick=()=>{try{localStorage.removeItem('session')}catch(e){} location.reload()};
+
+/* App khulte hi: agar pehle se login hai to seedha andar, warna login page dikhao */
+const sess=load('session',null);
+if(sess&&getUsers()[sess]) enter(sess); else render();
+</script>
+</body>
+</html>
